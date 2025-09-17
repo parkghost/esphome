@@ -7,12 +7,15 @@
 
 #include "appliance_base.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/switch/switch.h"
+#include "esphome/core/component.h"
 
 namespace esphome {
 namespace midea {
 namespace ac {
 
 using sensor::Sensor;
+using switch_::Switch;
 using climate::ClimateCall;
 using climate::ClimatePreset;
 using climate::ClimateTraits;
@@ -26,6 +29,8 @@ class AirConditioner : public ApplianceBase<dudanov::midea::ac::AirConditioner>,
   void set_outdoor_temperature_sensor(Sensor *sensor) { this->outdoor_sensor_ = sensor; }
   void set_humidity_setpoint_sensor(Sensor *sensor) { this->humidity_sensor_ = sensor; }
   void set_power_sensor(Sensor *sensor) { this->power_sensor_ = sensor; }
+  void set_display_light_switch(Switch *switch_) { this->display_light_switch_ = switch_; }
+  bool get_display_light_state() const { return this->base_.getLight() == dudanov::midea::ac::Display::DISPLAY_ON; }
   void on_status_change() override;
 
   /* ############### */
@@ -57,6 +62,7 @@ class AirConditioner : public ApplianceBase<dudanov::midea::ac::AirConditioner>,
   Sensor *outdoor_sensor_{nullptr};
   Sensor *humidity_sensor_{nullptr};
   Sensor *power_sensor_{nullptr};
+  Switch *display_light_switch_{nullptr};
 };
 
 }  // namespace ac
