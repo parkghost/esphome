@@ -6,6 +6,7 @@
 #include <Appliance/AirConditioner/AirConditioner.h>
 
 #include "esphome/components/climate/climate_traits.h"
+#include "esphome/core/string_ref.h"
 #include "air_conditioner.h"
 
 namespace esphome {
@@ -33,11 +34,13 @@ class Converters {
   static ClimateSwingMode to_climate_swing_mode(MideaSwingMode mode);
   static MideaPreset to_midea_preset(ClimatePreset preset);
   static MideaPreset to_midea_preset(const char *preset);
+  static MideaPreset to_midea_preset(StringRef preset) { return to_midea_preset(preset.c_str()); }
   static bool is_custom_midea_preset(MideaPreset preset);
   static ClimatePreset to_climate_preset(MideaPreset preset);
   static const char *to_custom_climate_preset(MideaPreset preset);
   static MideaFanMode to_midea_fan_mode(ClimateFanMode fan_mode);
   static MideaFanMode to_midea_fan_mode(const char *fan_mode);
+  static MideaFanMode to_midea_fan_mode(StringRef fan_mode) { return to_midea_fan_mode(fan_mode.c_str()); }
   static bool is_custom_midea_fan_mode(MideaFanMode fan_mode);
   static ClimateFanMode to_climate_fan_mode(MideaFanMode fan_mode);
   static const char *to_custom_climate_fan_mode(MideaFanMode fan_mode);
