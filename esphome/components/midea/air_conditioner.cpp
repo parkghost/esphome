@@ -14,6 +14,11 @@ static void set_sensor(Sensor *sensor, float value) {
     sensor->publish_state(value);
 }
 
+static void set_switch(Switch *switch_, bool value) {
+  if (switch_ != nullptr)
+    switch_->publish_state(value);
+}
+
 template<typename T> void update_property(T &property, const T &value, bool &flag) {
   if (property != value) {
     property = value;
@@ -70,6 +75,12 @@ void AirConditioner::on_status_change() {
   set_sensor(this->outdoor_sensor_, this->base_.getOutdoorTemp());
   set_sensor(this->power_sensor_, this->base_.getPowerUsage());
   set_sensor(this->humidity_sensor_, this->base_.getIndoorHum());
+
+  if (this->mode == ClimateMode::CLIMATE_MODE_OFF) {
+    set_switch(this->display_light_switch_, false);
+  } else {
+    set_switch(this->display_light_switch_, get_display_light_state());
+  }
 }
 
 void AirConditioner::control(const ClimateCall &call) {
@@ -183,7 +194,10 @@ void AirConditioner::do_swing_step() {
 }
 
 void AirConditioner::do_display_toggle() {
-  if (this->base_.getCapabilities().supportLightControl()) {
+  const bool use_uart =
+      this->display_control_ == DisplayControl::UART ||
+      (this->display_control_ == DisplayControl::AUTO && this->base_.getCapabilities().supportLightControl());
+  if (use_uart) {
     this->base_.displayToggle();
   } else {
 #ifdef USE_REMOTE_TRANSMITTER

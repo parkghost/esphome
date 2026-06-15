@@ -33,6 +33,7 @@ climate:
     timeout: 2s
     beeper: false
     autoconf: true
+    display_control: uart
     visual:
       min_temperature: 17 °C
       max_temperature: 30 °C
@@ -62,3 +63,9 @@ climate:
       name: Power
     humidity_setpoint:
       name: Humidity
+
+switch:
+  - platform: midea
+    midea_id: midea_unit
+    display_light:
+      name: "Display Light"
