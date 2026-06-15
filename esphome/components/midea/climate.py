@@ -36,12 +36,14 @@ from esphome.core import CORE, coroutine
 
 CODEOWNERS = ["@dudanov"]
 DEPENDENCIES = ["climate", "uart"]
-AUTO_LOAD = ["sensor"]
+AUTO_LOAD = ["sensor", "switch"]
 CONF_POWER_USAGE = "power_usage"
 CONF_HUMIDITY_SETPOINT = "humidity_setpoint"
+CONF_DISPLAY_CONTROL = "display_control"
 midea_ac_ns = cg.esphome_ns.namespace("midea").namespace("ac")
 AirConditioner = midea_ac_ns.class_("AirConditioner", climate.Climate, cg.Component)
 Capabilities = midea_ac_ns.namespace("Constants")
+DisplayControl = midea_ac_ns.enum("DisplayControl", is_class=True)
 
 
 def templatize(value):
@@ -101,11 +103,19 @@ CUSTOM_PRESETS = {
     "FREEZE_PROTECTION": Capabilities.FREEZE_PROTECTION,
 }
 
+# Channel used by midea_ac.display_toggle and the display light switch
+DISPLAY_CONTROLS = {
+    "UART": DisplayControl.UART,
+    "AUTO": DisplayControl.AUTO,
+    "IR": DisplayControl.IR,
+}
+
 validate_modes = cv.enum(ALLOWED_CLIMATE_MODES, upper=True)
 validate_presets = cv.enum(ALLOWED_CLIMATE_PRESETS, upper=True)
 validate_swing_modes = cv.enum(ALLOWED_CLIMATE_SWING_MODES, upper=True)
 validate_custom_fan_modes = cv.enum(CUSTOM_FAN_MODES, upper=True)
 validate_custom_presets = cv.enum(CUSTOM_PRESETS, upper=True)
+validate_display_control = cv.enum(DISPLAY_CONTROLS, upper=True)
 
 CONFIG_SCHEMA = cv.All(
     climate.climate_schema(AirConditioner)
@@ -119,6 +129,9 @@ CONFIG_SCHEMA = cv.All(
             ),
             cv.Optional(CONF_BEEPER, default=False): cv.boolean,
             cv.Optional(CONF_AUTOCONF, default=True): cv.boolean,
+            # Many appliances accept the UART display request without reporting
+            # the capability in their 0xB5 report, so UART is the default.
+            cv.Optional(CONF_DISPLAY_CONTROL, default="UART"): validate_display_control,
             cv.Optional(CONF_SUPPORTED_MODES): cv.ensure_list(validate_modes),
             cv.Optional(CONF_SUPPORTED_SWING_MODES): cv.ensure_list(
                 validate_swing_modes
@@ -285,6 +298,7 @@ async def to_code(config):
         cg.add(var.set_transmitter(transmitter_))
     cg.add(var.set_beeper_feedback(config[CONF_BEEPER]))
     cg.add(var.set_autoconf(config[CONF_AUTOCONF]))
+    cg.add(var.set_display_control(config[CONF_DISPLAY_CONTROL]))
     if CONF_SUPPORTED_MODES in config:
         cg.add(var.set_supported_modes(config[CONF_SUPPORTED_MODES]))
     if CONF_SUPPORTED_SWING_MODES in config:
@@ -309,9 +323,10 @@ async def to_code(config):
     # library talks to esp_wifi directly, so no library entry is needed.
     if CORE.is_esp32 and CORE.using_arduino:
         cg.add_library("WiFi", None)
-    # Using the repository until a release containing ESP-IDF support is published
+    # Fork of the upstream repository, adding getLight() so the display state
+    # can be read back. Used until the change lands upstream.
     cg.add_library(
         name="MideaUART",
         version=None,
-        repository="https://github.com/dudanov/MideaUART.git#eeea6c3e9b4474f067054592b435be1c4e466815",
+        repository="https://github.com/parkghost/MideaUART.git#8728cee665357a3b27c5d78b79b25f87bfb15269",
     )
